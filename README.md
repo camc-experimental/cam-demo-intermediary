@@ -1,2 +1,6 @@
-# cam-demo-intermediary
-Intermediary server to work with Watson services to service the Watson Visual Recognition demo app
+
+Environment Variables
+
+WATSON_TTS_USERNAME
+WATSON_TTS_PASSWORD
+WATSON_VR_API_KEY

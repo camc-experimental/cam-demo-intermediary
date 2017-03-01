@@ -1,0 +1,15 @@
+{
+  "name": "WatsonVisualRecognitionIntermediary",
+  "description": "An application to communicate to Watson on behalf of the Watson Visual Recognition Demo app",
+  "version": "0.0.1",
+  "author": "Fred Whipple <fwhipple@us.ibm.com>",
+  "dependencies": {
+    "watson-developer-cloud": "= 2.20.1",
+    "base64-js": ">= 1.2.0",
+    "stream-to-array": ">= 2.3.0"
+  },
+  "engine":  "node >= 6.9.5",
+  "scripts":  {
+  	"start":  "WATSON_TTS_USERNAME=7b01295c-6d61-476c-b539-4a9be9290ab9 WATSON_TTS_PASSWORD=GQevRJ7ZpywG WATSON_VR_API_KEY=1fc85814f67575a15cb58f045e138d23d0bc165b node app.js"
+  }
+}
