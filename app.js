@@ -1,14 +1,28 @@
 
+/**
+ * Copyright 2017 IBM Corp. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // Native imports
 var fs        = require ('fs');
 var http      = require ('http');
-var spawnSync = require ('child_process').spawnSync;
 
 // Custom imports
 var WatsonTextToSpeechV1 = require ('watson-developer-cloud/text-to-speech/v1');
 var VisualRecognitionV3  = require ('watson-developer-cloud/visual-recognition/v3');
 var base64               = require ('base64-js');
-var toArray              = require ('stream-to-array');
 
 // Initialize Watson services
 var tts = new WatsonTextToSpeechV1 ({
@@ -24,36 +38,40 @@ var vr = new VisualRecognitionV3 ({
 // Initialize the HTTP server
 const httpServer = http.createServer (function (httpRequest, httpResponse) {
 
-  console.log ('Received request from IP:  ' + httpRequest.connection.remoteAddress);
-  console.log ('Method:  ' + httpRequest.method)
+  console.log (httpRequest.connection.remoteAddress + '|' + httpRequest.method | httpRequest.url);
+
+  var output = {};
 
   if (httpRequest.method === 'POST' && httpRequest.url === '/vrdemo') {
 
-    console.log ('Correct URL found:  ' + httpRequest.url);
-
-    var imageData = "";
+    var imageDataBase64 = "";
     httpRequest.on ('data', function (data) {
-
-      console.log ('Received some data');
-      imageData += data;
+      imageDataBase64 += data;
     });
+
     httpRequest.on ('end', function () {
-
-      console.log ('Received end-of-data');
-
-      fs.writeFileSync ("./imagetest.png", imageData);
-
-      const imageBuffer = imageBase64ToBuffer (imageData);
+      const imageBuffer = imageBase64ToBuffer (imageDataBase64);
       performRecognition (imageBuffer, function (classJson) {
-        
-        const description = generateDescription (classJson);
-        console.log ("Description:  " + description);
 
-        getAudioByteArray (description, function (audioByteArray) {
-        
-          const audio64 = audioByteArray.toString ('base64');
-          httpResponse.end (audio64);
-        })
+        console.log ("Received classification information from Watson API");
+        var description = "Hmm, something went wrong here.";
+        output.classes = {};
+
+        if (typeof (classJson.images[0].classifiers[0].classes) !== 'undefined') {
+
+          console.log ("Classification data looks valid");
+          output.classes = classJson;
+          description = generateDescription (classJson);
+
+          getAudioByteArray (description, function (audioByteArray) {
+          
+            console.log ("Received Text-to-Speech information from Watson API");
+            const audio64 = audioByteArray.toString ('base64');
+            output.audioBase64 = audio64;
+
+            httpResponse.end (JSON.stringify (output));;
+          })
+        }
       });
     });
 
@@ -67,38 +85,24 @@ const httpServer = http.createServer (function (httpRequest, httpResponse) {
 httpServer.listen (8000);
  
 
+function imageBase64ToBuffer (imageDataBase64) {
 
-
-
-
-
-
-
-
-function imageBase64ToBuffer (imageData) {
-
-  if (imageData.indexOf (',') !== -1) {
-    console.log ("I found a comma.");
-    imageData = imageData.substring (imageData.indexOf (',') + 1);
+  if (imageDataBase64.indexOf (',') !== -1) {
+    imageDataBase64 = imageDataBase64.substring (imageDataBase64.indexOf (',') + 1);
   }
 
-  // Convert Base64 image text data to an array of bytes
-//  console.log ("Converting original image data:  " + imageData);
-  imageData = base64.toByteArray (imageData);
+  imageDataBase64 = base64.toByteArray (imageDataBase64);
 
-  // Copy each byte in the array into the buffer
-  var buff = new Buffer (imageData.length);
-  for (var i = 0; i < imageData.length; i++) {
+  var buff = new Buffer (imageDataBase64.length);
+  for (var i = 0; i < imageDataBase64.length; i++) {
 
-    buff[i] = imageData[i];
+    buff[i] = imageDataBase64[i];
   }
 
   return buff;
 }
 
 function performRecognition (imageBuffer, callback) {
-
-  console.log (imageBuffer);
 
   vr.classify ({images_file: imageBuffer}, function (error, response) {
 
@@ -123,24 +127,26 @@ function generateDescription (classJson) {
   var classes        = classJson.images[0].classifiers[0].classes;
   var highScoreClass = null;
   var highScore      = -1;
+  var colour         = "";
 
   // For each class, search for the highest score and keep a pointer to the class name
   for (var i = 0; i < classes.length; i++) {
 
-    // console.log ("Class name:  " + classes[i].class);
-    // console.log ("Score:       " + classes[i].score);
-    
-    if (highScore === -1 || highScore < classes[i].score) {
+    if ((highScore === -1 || highScore < classes[i].score) && classes[i].class.indexOf ('color') === -1) {
 
       highScoreClass = classes[i];
       highScore      = classes[i].score;
+
+    } else if (classes[i].class.indexOf ('color') !== -1) {
+
+      colour = classes[i].class;
     }
   }
 
-  console.log ("High score class:  " + highScoreClass.class);
-  console.log ("High score:        " + highScore);
-
   sentence = "It looks like you're looking at something that could be described by " + highScoreClass.class;
+
+  if (colour !== "") sentence += " and is a " + colour;
+  sentence += ".";
 
   return sentence;
 }
