@@ -35,6 +35,14 @@ var vr = new VisualRecognitionV3 ({
   version_date: '2016-05-19'
 });
 
+if (typeof (process.env.AEM_PATH) !== 'undefined' && process.env.AEM_PATH !== "" && process.env.AEM_PATH !== null) {
+  require (process.env.AEM_PATH + 'knj_index');
+  require (process.env.AEM_PATH + 'knj_deepdive.js');
+  require (process.env.AEM_PATH + 'knj_methodtrace.js');
+}
+
+
+
 const audioDir = '/tmp';
 
 // Initialize the HTTP server
