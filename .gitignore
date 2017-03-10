@@ -40,5 +40,5 @@ jspm_packages
 .vscode
 
 # Leftover audio files
-.ogg
-.mp4
+audio/*.ogg
+audio/*.mp4
