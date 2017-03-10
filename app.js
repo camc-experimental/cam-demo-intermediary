@@ -35,6 +35,8 @@ var vr = new VisualRecognitionV3 ({
   version_date: '2016-05-19'
 });
 
+const audioDir = './audio';
+
 // Initialize the HTTP server
 const httpServer = http.createServer (function (httpRequest, httpResponse) {
 
@@ -173,8 +175,8 @@ function getAudioByteArray (description, callback) {
     var mybuff = Buffer.concat (byteArrays);
 
     var fileid = Math.floor (Math.random () * 10000);
-    var filePath = '/tmp/audiofile' + fileid + '.ogg';
-    var outputPath = '/tmp/audiofile' + fileid + '.mp4';
+    var filePath = audioDir + '/audiofile' + fileid + '.ogg';
+    var outputPath = audioDir + '/audiofile' + fileid + '.mp4';
 
     fs.writeFile (filePath, mybuff, function (error) {
 
@@ -187,7 +189,7 @@ function getAudioByteArray (description, callback) {
 
         const spawn = require('child_process').spawn;
         const ffmpeg = spawn ('ffmpeg', ['-i', filePath, outputPath]);
-        var stdout;
+        var stderr;
 
         ffmpeg.on ('error', function (error) {
 
@@ -202,21 +204,21 @@ function getAudioByteArray (description, callback) {
 //          callback (new Buffer (''));
 //        });
 
-        ffmpeg.stdout.on ('data', function (data) {
+        ffmpeg.stderr.on ('data', function (data) {
 
-          stdout += data;
+          stderr += data;
         });
 
         ffmpeg.on ('close', function (exitCode) {
 
-          if (exitCode !== 0) {
+//          if (exitCode !== 0) {
+//
+//            console.log ("Error:  Received non-zero exit code from ffmpeg:  " + exitCode);
+//            callback (new Buffer (''));
+//
+//          } else {
 
-            console.log ("Error:  Received non-zero exit code from ffmpeg:  " + exitCode);
-            callback (new Buffer (''));
-
-          } else {
-
-            console.log ("Output from ffmpeg:  \n" + stdout);
+            console.log ("Output from ffmpeg:  \n" + stderr);
             fs.readFile (outputPath, function (error, data) {
 
               if (error) {
@@ -227,30 +229,26 @@ function getAudioByteArray (description, callback) {
               } else {
 
                 callback (data);
+                setTimeout (function (oggFile, mp4File) {
+
+                  console.log ("Deleting file:  " + offFile);
+                  fs.unlink (oggFile, function (error) {
+
+                    console.log ("Error:  Unable to delete file:  " + oggFile);
+                  });
+
+                  console.log ("Deleting file:  " + mp4File);
+                  fs.unlink (mp4File, function (error) {
+
+                    console.log ("Error:  Unable to delete file:  " + mp4File);
+                  });
+
+                }, 3600000, filePath, outputPath);
               }
             });
-          }
+//          }
         });
       }
     })
   });
 }
-
-
-
-/*
-const spawn = require('child_process').spawn;
-const ls = spawn('ls', ['-lh', '/usr']);
-
-ls.stdout.on('data', (data) => {
-  console.log(`stdout: ${data}`);
-});
-
-ls.stderr.on('data', (data) => {
-  console.log(`stderr: ${data}`);
-});
-
-ls.on('close', (code) => {
-  console.log(`child process exited with code ${code}`);
-});
-*/
