@@ -225,7 +225,7 @@ function getAudioByteArray (description, callback) {
       } else {
 
         const spawn = require('child_process').spawn;
-        const ffmpeg = spawn ('ffmpeg', ['-i', filePath, outputPath]);
+        const ffmpeg = spawn ('ffmpeg', ['-i', filePath, '-strict', '-2', outputPath]);
         var stderr;
 
         ffmpeg.on ('error', function (error) {
