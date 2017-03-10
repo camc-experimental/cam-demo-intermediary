@@ -231,7 +231,7 @@ function getAudioByteArray (description, callback) {
                 callback (data);
                 setTimeout (function (oggFile, mp4File) {
 
-                  console.log ("Deleting file:  " + offFile);
+                  console.log ("Deleting file:  " + oggFile);
                   fs.unlink (oggFile, function (error) {
 
                     console.log ("Error:  Unable to delete file:  " + oggFile);
