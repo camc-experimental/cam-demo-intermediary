@@ -131,32 +131,61 @@ function performRecognition (imageBuffer, callback) {
 
 function generateDescription (classJson) {
 
-  var sentence = "Hmm, it looks like something went wrong.";
+  var sentence = "Sorry, it looks like something went wrong.";
 
   // Navigate through the response to the actual classes
   var classes        = classJson.images[0].classifiers[0].classes;
-  var highScoreClass = null;
-  var highScore      = -1;
-  var colour         = "";
 
-  // For each class, search for the highest score and keep a pointer to the class name
-  for (var i = 0; i < classes.length; i++) {
+  // Bubble Sort!  Do not try this at home.
+  let sorted = false;
+  while (! sorted) {
 
-    if ((highScore === -1 || highScore < classes[i].score) && classes[i].class.indexOf ('color') === -1) {
+    sorted = true;
+    for (let i = 1; i < classes.length; i++) {
 
-      highScoreClass = classes[i];
-      highScore      = classes[i].score;
+      if (classes[i].score > classes[i-1].score) {
 
-    } else if (classes[i].class.indexOf ('color') !== -1) {
-
-      colour = classes[i].class;
+        let temp = classes[i-1];
+        classes[i-1] = classes[i];
+        classes[i] = temp;
+        sorted = false;
+      }
     }
   }
 
-  sentence = "It looks like you're looking at something that could be described by " + highScoreClass.class;
+  // Parse out the top 3 descriptive words, and the colour
+  let descWords = [];
+  let colourWords = "";
+  for (let i = 0; i < classes.length; i++) {
 
-  if (colour !== "") sentence += " and is a " + colour;
-  sentence += ".";
+    if (classes[i].class.indexOf ('color') === -1) {
+
+      if (descWords.length < 3) {
+
+        descWords.push (classes[i].class);
+      }
+    } else {
+
+      if (colourWords === "") colourWords = classes[i].class;
+    }
+  }
+
+  // Build an intelligent sentence
+  if (descWords.length === 1 && colourWords === "") {
+    sentence = "This photo can be described as " + descWords[0] + ".";
+  } else if (descWords.length === 1 && colourWords !== "") {
+    sentence = "This photo can be described as " + descWords[0] + " and is a " + colourWords + ".";
+  } else if (descWords.length === 2 && colourWords === "") {
+    sentence = "This photo can be described as " + descWords[0] + " and " + descWords[1] + ".";
+  } else if (descWords.length === 2 && colourWords !== "") {
+    sentence = "This photo can be described as " + descWords[0] + " and " + descWords[1] + ", and is a " + colourWords + ".";
+  } else if (descWords.length === 3 && colourWords === "") {
+    sentence = "This photo can be described as " + descWords[0] + ", " + descWords[1] + ", and " + descWords[2] + ".";
+  } else if (descWords.length === 3 && colourWords !== "") {
+    sentence = "This photo can be described as " + descWords[0] + ", " + descWords[1] + ", and " + descWords[2] + ", and is a " + colourWords + ".";
+  }
+
+  console.log ("TTS sentence is:  " + sentence);
 
   return sentence;
 }
