@@ -35,7 +35,7 @@ var vr = new VisualRecognitionV3 ({
   version_date: '2016-05-19'
 });
 
-const audioDir = './audio';
+const audioDir = '/tmp';
 
 // Initialize the HTTP server
 const httpServer = http.createServer (function (httpRequest, httpResponse) {
@@ -218,7 +218,7 @@ function getAudioByteArray (description, callback) {
 //
 //          } else {
 
-            console.log ("Output from ffmpeg:  \n" + stderr);
+//            console.log ("Output from ffmpeg:  \n" + stderr);
             fs.readFile (outputPath, function (error, data) {
 
               if (error) {
