@@ -156,7 +156,7 @@ function getAudioByteArray (description, callback) {
   var ttsParams = {
     text: description,
     voice: 'en-US_AllisonVoice', // Optional voice 
-    accept: 'audio/wav'
+    accept: 'audio/ogg;codecs=opus'
   };
 
   var byteArrays = [];  
