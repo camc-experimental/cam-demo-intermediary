@@ -171,8 +171,86 @@ function getAudioByteArray (description, callback) {
   ttsStream.on ('end', function () {
 
     var mybuff = Buffer.concat (byteArrays);
-    callback (mybuff);
 
+    var fileid = Math.floor (Math.random () * 10000);
+    var filePath = '/tmp/audiofile' + fileid + '.ogg';
+    var outputPath = '/tmp/audiofile' + fileid + '.mp4';
+
+    fs.writeFile (filePath, mybuff, function (error) {
+
+      if (error) {
+
+        console.log ("Error:  Received error while writing file:  " + filePath);
+        callback (new Buffer (''));
+
+      } else {
+
+        const spawn = require('child_process').spawn;
+        const ffmpeg = spawn ('ffmpeg', ['-i', filePath, outputPath]);
+        var stdout;
+
+        ffmpeg.on ('error', function (error) {
+
+          console.log ("Error:  Received an error while running ffmpeg:  " + error);
+          callback (new Buffer (''));
+        });
+
+//        ffmpeg.stderr.on ('data', function (data) {
+//
+//          console.log ("Error:  Received output on stderr from ffmpeg:  " + data);
+//          ffmpeg.kill ();
+//          callback (new Buffer (''));
+//        });
+
+        ffmpeg.stdout.on ('data', function (data) {
+
+          stdout += data;
+        });
+
+        ffmpeg.on ('close', function (exitCode) {
+
+          if (exitCode !== 0) {
+
+            console.log ("Error:  Received non-zero exit code from ffmpeg:  " + exitCode);
+            callback (new Buffer (''));
+
+          } else {
+
+            console.log ("Output from ffmpeg:  \n" + stdout);
+            fs.readFile (outputPath, function (error, data) {
+
+              if (error) {
+
+                console.log ("Received error while reading ffmpeg output file:  " + error);
+                callback (new Buffer (''));
+
+              } else {
+
+                callback (data);
+              }
+            });
+          }
+        });
+      }
+    })
   });
 }
 
+
+
+/*
+const spawn = require('child_process').spawn;
+const ls = spawn('ls', ['-lh', '/usr']);
+
+ls.stdout.on('data', (data) => {
+  console.log(`stdout: ${data}`);
+});
+
+ls.stderr.on('data', (data) => {
+  console.log(`stderr: ${data}`);
+});
+
+ls.on('close', (code) => {
+  console.log(`child process exited with code ${code}`);
+});
+*/
